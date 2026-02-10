@@ -12,30 +12,62 @@ DEFAULT_DELAY = 0.3
 
 def send_knock(target, port, delay):
     """Send a single knock to the target port."""
-    # TODO: Choose UDP or TCP knocks based on your design.
-    # Example TCP knock stub:
+    print(f"🔨 Knocking on {target}:{port}...", end=" ")
+    
+    # TCP knock - just connect and disconnect
     try:
-        with socket.create_connection((target, port), timeout=1.0):
-            pass
-    except OSError:
-        pass
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.0)
+        sock.connect((target, port))
+        sock.close()
+        print("✅")
+    except socket.timeout:
+        print("⏰ (timeout - but knock sent)")
+    except ConnectionRefusedError:
+        print("✅ (connection refused - but knock registered)")
+    except OSError as e:
+        print(f"⚠️  ({e})")
+    
     time.sleep(delay)
 
 
 def perform_knock_sequence(target, sequence, delay):
     """Send the full knock sequence."""
-    for port in sequence:
+    print(f"\n🚪 Starting knock sequence on {target}")
+    print(f"📋 Sequence: {sequence}")
+    print(f"⏱️  Delay between knocks: {delay}s\n")
+    
+    for i, port in enumerate(sequence, 1):
+        print(f"[{i}/{len(sequence)}] ", end="")
         send_knock(target, port, delay)
+    
+    print(f"\n✅ Knock sequence complete!")
+    print(f"🔓 Port {DEFAULT_PROTECTED_PORT} should now be accessible\n")
 
 
 def check_protected_port(target, protected_port):
     """Try connecting to the protected port after knocking."""
-    # TODO: Replace with real service connection if needed.
+    print(f"🔍 Checking if protected port {protected_port} is open...")
+    
     try:
-        with socket.create_connection((target, protected_port), timeout=2.0):
-            print(f"[+] Connected to protected port {protected_port}")
-    except OSError:
-        print(f"[-] Could not connect to protected port {protected_port}")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(2.0)
+        sock.connect((target, protected_port))
+        sock.close()
+        print(f"✅ Successfully connected to port {protected_port}!")
+        print(f"🎉 Port knocking worked!\n")
+        return True
+    except socket.timeout:
+        print(f"❌ Connection timeout on port {protected_port}")
+        print(f"⚠️  Port may still be closed\n")
+        return False
+    except ConnectionRefusedError:
+        print(f"❌ Connection refused on port {protected_port}")
+        print(f"⚠️  Knock sequence may have been incorrect\n")
+        return False
+    except OSError as e:
+        print(f"❌ Could not connect to port {protected_port}: {e}\n")
+        return False
 
 
 def parse_args():
